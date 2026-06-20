@@ -13,13 +13,11 @@ import base64
 import hashlib
 import itertools
 import json
-import os
 import secrets
 import sys
 import threading
 import time
 import webbrowser
-from typing import Optional
 
 import typer
 
@@ -85,7 +83,7 @@ class _Spinner:
             sys.stderr.flush()
             time.sleep(0.1)
 
-    def __enter__(self) -> "_Spinner":
+    def __enter__(self) -> _Spinner:
         if sys.stderr.isatty():
             self._thread.start()
         return self
@@ -105,19 +103,19 @@ class _Spinner:
 
 @app.command()
 def login(
-    api_key: Optional[str] = typer.Option(
+    api_key: str | None = typer.Option(
         None,
         "--api-key",
         help="Skip the device flow and store an API key. Use '-' to read from stdin.",
     ),
-    api_url: Optional[str] = ApiUrlOpt,
+    api_url: str | None = ApiUrlOpt,
     no_browser: bool = typer.Option(
         False, "--no-browser", help="Do not auto-open the verification URL."
     ),
     scope: str = typer.Option(
         config.DEFAULT_SCOPE, "--scope", help="OAuth scope to request."
     ),
-    profile: Optional[str] = ProfileOpt,
+    profile: str | None = ProfileOpt,
 ):
     """Authenticate. Device flow by default; --api-key for headless use."""
     profile = config.resolve_profile(profile)
@@ -210,7 +208,7 @@ def _login_device(profile: str, api_url: str, scope: str, no_browser: bool) -> N
 # ---------------------------------------------------------------------------
 
 @app.command()
-def logout(profile: Optional[str] = ProfileOpt):
+def logout(profile: str | None = ProfileOpt):
     """Clear the active profile's stored credentials."""
     profile = config.resolve_profile(profile)
     entry = auth.load_profile(profile)
@@ -231,8 +229,8 @@ def logout(profile: Optional[str] = ProfileOpt):
 
 @app.command()
 def whoami(
-    api_url: Optional[str] = ApiUrlOpt,
-    profile: Optional[str] = ProfileOpt,
+    api_url: str | None = ApiUrlOpt,
+    profile: str | None = ProfileOpt,
     raw: bool = typer.Option(False, "--json", help="Print the raw userinfo JSON."),
 ):
     """Show the authenticated principal, org, and scopes."""
@@ -258,22 +256,22 @@ def whoami(
 # op — generic operation dispatch
 # ---------------------------------------------------------------------------
 
-@app.command()
+@app.command(hidden=True)
 def op(
-    operation_id: Optional[str] = typer.Argument(
+    operation_id: str | None = typer.Argument(
         None, help="Operation id, e.g. orders.estimate or catalog.federated_search."
     ),
-    body: Optional[str] = typer.Argument(
+    body: str | None = typer.Argument(
         None, help="JSON request body. Use '-' to read from stdin."
     ),
-    file: Optional[str] = typer.Option(
+    file: str | None = typer.Option(
         None, "--file", "-f", help="Read the JSON body from a file."
     ),
     list_ops: bool = typer.Option(
         False, "--list", help="List available operation ids and exit."
     ),
-    api_url: Optional[str] = ApiUrlOpt,
-    profile: Optional[str] = ProfileOpt,
+    api_url: str | None = ApiUrlOpt,
+    profile: str | None = ProfileOpt,
 ):
     """Invoke any operation: POST /v1/op/OPERATION_ID with a JSON body."""
     if list_ops:
@@ -301,7 +299,7 @@ def op(
     _print_json(result)
 
 
-def _resolve_body(body: Optional[str], file: Optional[str]):
+def _resolve_body(body: str | None, file: str | None):
     """Resolve the JSON body from --file, stdin ('-'), positional arg, or {}."""
     if file:
         try:
@@ -325,7 +323,7 @@ def _resolve_body(body: Optional[str], file: Optional[str]):
         _fail(f"Invalid JSON body: {exc}")
 
 
-def _list_operations(api_url: Optional[str], profile: Optional[str]) -> None:
+def _list_operations(api_url: str | None, profile: str | None) -> None:
     """List operation ids from the live OpenAPI document."""
     try:
         ctx_url = config.resolve_api_url(
@@ -351,47 +349,33 @@ def _list_operations(api_url: Optional[str], profile: Optional[str]) -> None:
     typer.secho(f"\n{len(ops)} operations.", fg=typer.colors.BLUE, err=True)
 
 
-# ---------------------------------------------------------------------------
-# orders — curated subcommand (thin alias over `op`)
-# ---------------------------------------------------------------------------
+def main() -> None:
+    """Console-script entry (pyproject -> geopera_cli.__main__:main).
 
-orders_app = typer.Typer(help="Curated order commands (thin aliases over `op`).")
-app.add_typer(orders_app, name="orders")
+    The static commands (login/logout/whoami and the hidden `op` escape hatch)
+    live on the Typer ``app``; the generated `resource action` operation tree is
+    attached to the underlying Click group at startup.
 
+    We invoke with ``standalone_mode=False`` and translate Click's control-flow
+    exceptions ourselves, because Typer's overridden ``main`` does not catch
+    Click's ``Exit`` (it would otherwise surface as a traceback on ``--help``).
+    """
+    import click
 
-@orders_app.command("list")
-def orders_list(
-    api_url: Optional[str] = ApiUrlOpt,
-    profile: Optional[str] = ProfileOpt,
-    raw: bool = typer.Option(False, "--json", help="Print raw JSON instead of a table."),
-):
-    """List your orders (alias for `op orders.list`)."""
+    from . import tree
+
+    cli = typer.main.get_command(app)
+    tree.build_tree(cli)
     try:
-        ctx = auth.load_context(profile, api_url)
-        result = client.invoke_op(ctx, "orders.list", {})
-    except auth.AuthError as exc:
-        _fail(str(exc))
-    except client.OpError as exc:
-        _fail(f"[{exc.status}] {exc.message}", code=2)
-
-    rows = result.get("orders", result) if isinstance(result, dict) else result
-    if raw or not isinstance(rows, list):
-        _print_json(result)
-        return
-
-    if not rows:
-        typer.echo("No orders.")
-        return
-
-    for row in rows:
-        oid = row.get("id", "-")
-        name = row.get("display_name") or row.get("name") or "-"
-        status = row.get("status", "-")
-        typer.echo(f"{oid:<38}  {status:<14}  {name}")
-
-
-def main() -> None:  # console-script-friendly entry (pyproject uses `app`)
-    app()
+        cli.main(standalone_mode=False)
+    except click.exceptions.Exit as exc:
+        raise SystemExit(exc.exit_code)
+    except click.exceptions.Abort:
+        typer.secho("Aborted.", fg=typer.colors.RED, err=True)
+        raise SystemExit(1)
+    except click.ClickException as exc:
+        exc.show()
+        raise SystemExit(exc.exit_code)
 
 
 if __name__ == "__main__":

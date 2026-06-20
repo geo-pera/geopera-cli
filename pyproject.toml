@@ -29,6 +29,7 @@ classifiers = [
 # (device flow + token refresh) which lives outside the generated op surface.
 dependencies = [
     "typer[all]>=0.12.0",
+    "click>=8.1",
     "httpx>=0.23.1,<0.29.0",
     "geopera>=2.0.0",
 ]
@@ -45,14 +46,19 @@ Documentation = "https://docs.geopera.com/cli"
 Source = "https://github.com/geo-pera/geopera-cli"
 
 [project.scripts]
-geopera = "geopera_cli.__main__:app"
+geopera = "geopera_cli.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+# Bundle the kernel spec snapshot used to generate the command tree.
+artifacts = ["geopera_cli/spec.json"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["geopera_cli"]
+force-include = { "geopera_cli/spec.json" = "geopera_cli/spec.json" }
 
 [tool.ruff]
 line-length = 120
