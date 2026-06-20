@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Local credentials must NEVER be committed (they live in ~/.config/geopera).
+credentials.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

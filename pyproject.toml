@@ -1,0 +1,61 @@
+[project]
+name = "geopera-cli"
+version = "0.1.0"
+description = "Command-line interface for the Geopera geospatial data platform"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "Geopera", email = "support@geopera.com" }]
+keywords = ["geopera", "cli", "satellite", "geospatial", "earth-observation", "stac"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Utilities",
+]
+
+# The CLI is a thin auth + dispatch shell over the published `geopera` SDK
+# (github.com/geo-pera/geopera-python). All real API calls go through the
+# SDK's AuthenticatedClient; httpx is used directly only for the OAuth wire
+# (device flow + token refresh) which lives outside the generated op surface.
+dependencies = [
+    "typer[all]>=0.12.0",
+    "httpx>=0.23.1,<0.29.0",
+    "geopera>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.5.0",
+]
+
+[project.urls]
+Homepage = "https://docs.geopera.com"
+Documentation = "https://docs.geopera.com/cli"
+Source = "https://github.com/geo-pera/geopera-cli"
+
+[project.scripts]
+geopera = "geopera_cli.__main__:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["geopera_cli"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["F", "I", "UP"]
