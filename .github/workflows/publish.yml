@@ -1,0 +1,59 @@
+name: Publish CLI (geopera-cli)
+
+# Publishes geopera-cli to PyPI on a tag like `v0.1.0`.
+# Uses PyPI Trusted Publishing (OIDC) — no stored token.
+#
+# One-time PyPI setup: pypi.org -> the geopera-cli project -> Publishing -> add a GitHub
+# Actions publisher (repo geo-pera/geopera-cli, workflow publish.yml, environment "pypi").
+# First publish may use PyPI's "pending publisher" flow.
+#
+# NOTE: geopera-cli depends on the `geopera` SDK, so publish `geopera` to PyPI first —
+# otherwise `pip install geopera-cli` can't resolve its dependency for end users.
+#
+# Release: bump `version` in pyproject.toml, then:
+#   git tag vX.Y.Z && git push origin vX.Y.Z
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # OIDC token for PyPI Trusted Publishing
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build sdist + wheel
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine check dist/*
+
+      - name: Sanity-check the package metadata + entry point
+        # Doesn't install runtime deps (the `geopera` SDK may not be on PyPI yet) — just
+        # confirms the wheel declares the `geopera` console script.
+        run: |
+          python - <<'PY'
+          import zipfile, glob, sys
+          whl = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(whl).namelist()
+          entry = [n for n in names if n.endswith("entry_points.txt")]
+          txt = zipfile.ZipFile(whl).read(entry[0]).decode() if entry else ""
+          assert "geopera" in txt and "geopera_cli" in txt, f"missing console_scripts entry: {txt!r}"
+          print("ok: wheel declares the `geopera` console script")
+          PY
+
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
