@@ -5,4 +5,4 @@ is reached through /v1/op/{operation_id}; the only CLI-resident logic is auth
 (device flow, token refresh, and the Bearer / X-API-Key choice).
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

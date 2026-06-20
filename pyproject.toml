@@ -1,6 +1,6 @@
 [project]
 name = "geopera-cli"
-version = "0.1.0"
+version = "0.2.0"
 description = "Command-line interface for the Geopera geospatial data platform"
 readme = "README.md"
 license = { text = "MIT" }
