@@ -7,7 +7,7 @@ data platform.
 [`geopera` Python SDK](https://github.com/geo-pera/geopera-python). The only
 logic that lives in the CLI is authentication — the OAuth device flow, token
 refresh, and the choice between a `Bearer` token and an `X-API-Key` header.
-Every actual capability is reached through the generic kernel endpoint
+Every actual capability is reached through the generic API endpoint
 `POST /v1/op/{operation_id}`, so any of the ~227 operations is callable with no
 per-command code, and a new backend operation is instantly usable as
 `geopera op <new.op>` with zero CLI changes.
@@ -49,7 +49,7 @@ geopera orders list
 | `geopera login` | Device-flow login (default). `--api-key KEY` stores a key instead (`-` reads from stdin). `--api-url URL`, `--no-browser`, `--scope`. |
 | `geopera logout` | Clear the active profile's stored credentials (best-effort OAuth logout). |
 | `geopera whoami` | Show principal / org / scope (validates the session). `--json` for raw output. |
-| `geopera op OPERATION_ID [JSON]` | Generic kernel dispatch. Body from positional arg, `--file`, or `-` (stdin). `--list` enumerates operations. |
+| `geopera op OPERATION_ID [JSON]` | Generic operation dispatch. Body from positional arg, `--file`, or `-` (stdin). `--list` enumerates operations. |
 | `geopera orders list` | Curated alias over `op orders.list` with table formatting. |
 
 Global flags `--profile NAME` (env `GEOPERA_PROFILE`) and `--api-url URL`
@@ -82,7 +82,7 @@ geopera login --api-key gpra_xxxxxxxx
 printf '%s' "$GEOPERA_KEY" | geopera login --api-key -
 ```
 
-API keys are sent as `X-API-Key`, which the Geopera kernel accepts on every
+API keys are sent as `X-API-Key`, which the Geopera API accepts on every
 authenticated endpoint.
 
 ### Profiles

@@ -193,7 +193,7 @@ class AuthContext:
     def client(self) -> AuthenticatedClient:
         """Construct the SDK AuthenticatedClient for this auth context.
 
-        - api_key  -> X-API-Key header, no prefix (kernel accepts X-API-Key)
+        - api_key  -> X-API-Key header, no prefix (API accepts X-API-Key)
         - oauth    -> Authorization: Bearer <access_token>
         """
         if self.is_api_key:

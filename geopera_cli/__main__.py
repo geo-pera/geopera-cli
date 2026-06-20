@@ -255,7 +255,7 @@ def whoami(
 
 
 # ---------------------------------------------------------------------------
-# op — generic kernel dispatch
+# op — generic operation dispatch
 # ---------------------------------------------------------------------------
 
 @app.command()
@@ -275,7 +275,7 @@ def op(
     api_url: Optional[str] = ApiUrlOpt,
     profile: Optional[str] = ProfileOpt,
 ):
-    """Invoke any kernel operation: POST /v1/op/OPERATION_ID with a JSON body."""
+    """Invoke any operation: POST /v1/op/OPERATION_ID with a JSON body."""
     if list_ops:
         _list_operations(api_url, profile)
         return

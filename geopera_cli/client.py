@@ -5,7 +5,7 @@ Two kinds of call live here:
   * Operation dispatch (`invoke_op`) — POST /v1/op/{operation_id}. This goes
     through the SDK's AuthenticatedClient.get_httpx_client(), which already
     attaches the right auth header (Bearer or X-API-Key). A single helper
-    therefore reaches every one of the ~227 kernel operations with zero
+    therefore reaches every one of the ~227 operations with zero
     per-op code, honouring the backend-first principle: the CLI sends params,
     the backend produces output.
 
